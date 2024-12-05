@@ -51,122 +51,218 @@ export default function AssetGenerator() {
     }
   }
 
-  const generateAssets = async () => {
-    setIsProcessing(true)
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: textPrompt,
-          workflowType,
-          assetType: selectedAssetType,
-          domain: selectedDomain,
-          brandColors
-        }),
-      })
+const generateAssets = async () => {
+  setIsProcessing(true)
+  try {
+    console.log('Sending request with:', { textPrompt, workflowType, selectedAssetType })
+    
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: textPrompt,
+        workflowType,
+        assetType: selectedAssetType,
+        domain: selectedDomain,
+        brandColors
+      }),
+    })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Generation failed')
-      }
+    console.log('Response status:', response.status)
+    const data = await response.json()
+    console.log('Response data:', data)
 
-      const data = await response.json()
-      setGeneratedAssets(data.assets)
-    } catch (error) {
-      console.error('Generation failed:', error)
-      alert(error.message || 'Failed to generate assets. Please try again.')
-    } finally {
-      setIsProcessing(false)
+    if (!response.ok) {
+      throw new Error(data.error || 'Generation failed')
     }
+
+    setGeneratedAssets(data.assets)
+  } catch (error) {
+    console.error('Generation failed:', error)
+    alert(error.message || 'Failed to generate assets. Please try again.')
+  } finally {
+    setIsProcessing(false)
+  }
+}
+
+  const renderWorkflowButton = (key, value) => (
+    <div
+      key={key}
+      onClick={() => setWorkflowType(value)}
+      className={`p-4 border rounded-lg cursor-pointer ${
+        workflowType === value ? 'border-blue-500 bg-blue-50' : ''
+      }`}
+    >
+      <div className="text-center">
+        {key === 'TEXT_TO_ASSET' && <FileText className="w-8 h-8 mx-auto mb-2" />}
+        {key === 'BRAND_BASED' && <Settings className="w-8 h-8 mx-auto mb-2" />}
+        {key === 'DOMAIN_SET' && <LayoutGrid className="w-8 h-8 mx-auto mb-2" />}
+        {key === 'CONVERSION' && <Upload className="w-8 h-8 mx-auto mb-2" />}
+        <h3 className="font-medium">{key.replace(/_/g, ' ')}</h3>
+      </div>
+    </div>
+  )
+
+  const renderWorkflowContent = () => {
+    if (workflowType === WORKFLOW_TYPES.TEXT_TO_ASSET) {
+      return (
+        <>
+          <textarea
+            className="w-full p-3 border rounded-lg"
+            rows="3"
+            placeholder="Describe the asset you want to generate..."
+            value={textPrompt}
+            onChange={(e) => setTextPrompt(e.target.value)}
+          />
+          <select
+            className="w-full p-2 border rounded-lg"
+            value={selectedAssetType}
+            onChange={(e) => setSelectedAssetType(e.target.value)}
+          >
+            <option value="">Select Asset Type</option>
+            {ASSET_TYPES.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+        </>
+      )
+    }
+
+    if (workflowType === WORKFLOW_TYPES.BRAND_BASED) {
+      return (
+        <>
+          <div className="border-2 border-dashed rounded-lg p-6">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+              id="logo-upload"
+            />
+            <label
+              htmlFor="logo-upload"
+              className="cursor-pointer flex flex-col items-center"
+            >
+              <Upload className="h-12 w-12 mb-2" />
+              <span>Upload logo (optional)</span>
+            </label>
+            {preview && (
+              <div className="mt-4">
+                <img src={preview} alt="Preview" className="max-h-48 mx-auto" />
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <input
+              type="text"
+              placeholder="Primary Color (hex)"
+              className="p-2 border rounded-lg"
+              value={brandColors.primary}
+              onChange={(e) => setBrandColors({...brandColors, primary: e.target.value})}
+            />
+            <input
+              type="text"
+              placeholder="Secondary Color (hex)"
+              className="p-2 border rounded-lg"
+              value={brandColors.secondary}
+              onChange={(e) => setBrandColors({...brandColors, secondary: e.target.value})}
+            />
+            <input
+              type="text"
+              placeholder="Accent Color (hex)"
+              className="p-2 border rounded-lg"
+              value={brandColors.accent}
+              onChange={(e) => setBrandColors({...brandColors, accent: e.target.value})}
+            />
+          </div>
+        </>
+      )
+    }
+
+    if (workflowType === WORKFLOW_TYPES.DOMAIN_SET) {
+      return (
+        <select
+          className="w-full p-2 border rounded-lg"
+          value={selectedDomain}
+          onChange={(e) => setSelectedDomain(e.target.value)}
+        >
+          <option value="">Select Domain</option>
+          {DOMAIN_CATEGORIES.map(domain => (
+            <option key={domain} value={domain}>{domain}</option>
+          ))}
+        </select>
+      )
+    }
+
+    if (workflowType === WORKFLOW_TYPES.CONVERSION) {
+      return (
+        <div className="border-2 border-dashed rounded-lg p-6">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
+            id="asset-upload"
+          />
+          <label
+            htmlFor="asset-upload"
+            className="cursor-pointer flex flex-col items-center"
+          >
+            <Upload className="h-12 w-12 mb-2" />
+            <span>Upload existing asset</span>
+          </label>
+          {preview && (
+            <div className="mt-4">
+              <img src={preview} alt="Preview" className="max-h-48 mx-auto" />
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    return null
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 p-6">
-      {/* Workflow Type Selection */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {Object.entries(WORKFLOW_TYPES).map(([key, value]) => (
-          <div
-            key={key}
-            onClick={() => setWorkflowType(value)}
-            className={`
-              p-6 rounded-lg shadow-sm cursor-pointer transition-all
-              ${workflowType === value 
-                ? 'bg-blue-50 border-2 border-blue-500' 
-                : 'bg-white border-2 border-gray-200 hover:border-blue-300'}
-            `}
-          >
-            <div className="text-center space-y-3">
-              {key === 'TEXT_TO_ASSET' && <FileText className="w-10 h-10 mx-auto text-blue-600" />}
-              {key === 'BRAND_BASED' && <Settings className="w-10 h-10 mx-auto text-blue-600" />}
-              {key === 'DOMAIN_SET' && <LayoutGrid className="w-10 h-10 mx-auto text-blue-600" />}
-              {key === 'CONVERSION' && <Upload className="w-10 h-10 mx-auto text-blue-600" />}
-              <h3 className="font-medium text-gray-900">{key.replace(/_/g, ' ')}</h3>
-            </div>
-          </div>
-        ))}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Object.entries(WORKFLOW_TYPES).map(([key, value]) => renderWorkflowButton(key, value))}
       </div>
 
       {workflowType && (
-        <div className="space-y-6 bg-white p-6 rounded-lg shadow-sm border-2 border-gray-200">
-          {/* Input Section */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <textarea
-              className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              rows="4"
-              placeholder="Describe what you want to generate..."
-              value={textPrompt}
-              onChange={(e) => setTextPrompt(e.target.value)}
-            />
-            <select
-              className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              value={selectedAssetType}
-              onChange={(e) => setSelectedAssetType(e.target.value)}
-            >
-              <option value="">Select Asset Type</option>
-              {ASSET_TYPES.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
+        <div className="space-y-4">
+          {renderWorkflowContent()}
+          
+          <textarea
+            className="w-full p-3 border rounded-lg"
+            rows="3"
+            placeholder="Additional requirements or specifications..."
+            value={textPrompt}
+            onChange={(e) => setTextPrompt(e.target.value)}
+          />
 
           <button
             onClick={generateAssets}
             disabled={isProcessing}
-            className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-medium
-                     disabled:bg-gray-400 hover:bg-blue-700 transition-colors
-                     flex items-center justify-center space-x-2"
+            className="w-full bg-blue-500 text-white p-3 rounded-lg disabled:bg-gray-300"
           >
-            {isProcessing ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                <span>Generating...</span>
-              </>
-            ) : (
-              'Generate Assets'
-            )}
+            {isProcessing ? 'Generating...' : 'Generate Assets'}
           </button>
         </div>
       )}
 
-      {/* Generated Assets Display */}
       {generatedAssets.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {generatedAssets.map((asset, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-sm border-2 border-gray-200 overflow-hidden">
-              <div className="aspect-square w-full relative">
-                <img 
-                  src={asset.url} 
-                  alt={`Generated ${asset.type} ${index + 1}`}
-                  className="object-contain w-full h-full p-4"
-                />
-              </div>
-              <div className="p-4 border-t border-gray-200">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-900">{asset.type}</span>
-                  <span className="text-green-600 font-medium">
+            <div key={index} className="border rounded-lg p-4">
+              <img src={asset.url} alt={`Generated asset ${index + 1}`} className="w-full" />
+              <div className="mt-2">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">{asset.type}</span>
+                  <span className="text-sm text-green-600">
                     {(asset.accessibilityScore * 100).toFixed(0)}% Accessible
                   </span>
                 </div>
