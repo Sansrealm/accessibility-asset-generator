@@ -11,21 +11,25 @@ export async function POST(req) {
       throw new Error('Recraft API key is not configured')
     }
 
-    // Make the API call without Bearer prefix
+    // Using Bearer prefix with the API key
     const response = await fetch('https://api.recraft.ai/api/v1/imagine', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': apiKey.trim()  // Removed Bearer prefix, just using the key directly
+        'Authorization': `Bearer ${apiKey.trim()}`  // Added Bearer prefix back
       },
       body: JSON.stringify({
         prompt: `Create an accessible ${assetType}: ${prompt}`,
         width: 512,
         height: 512,
         num_images: 1,
-        style: 'icon'
+        style: 'icon',
+        negative_prompt: "blurry, low contrast, confusing, complex"
       })
     })
+
+    // Log the response for debugging
+    console.log('Response status:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -34,6 +38,7 @@ export async function POST(req) {
     }
 
     const responseData = await response.json()
+    console.log('Recraft response:', responseData)
 
     const assets = Array.isArray(responseData.output) ? responseData.output.map(url => ({
       url,
