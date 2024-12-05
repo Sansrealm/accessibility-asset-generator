@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
-import AssetGenerator from '@/components/AssetGenerator'
+import AssetGenerator from '../components/AssetGenerator'
 
 export default function Home() {
   const { data: session } = useSession()
