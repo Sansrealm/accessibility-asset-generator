@@ -5,30 +5,22 @@ export async function POST(req) {
     const body = await req.json()
     const { prompt, workflowType, assetType } = body
 
-    // Validate API key
-    const apiKey = process.env.RECRAFT_API_KEY
-    if (!apiKey) {
-      throw new Error('Recraft API key is not configured')
-    }
-
-    // Using Bearer prefix with the API key
-    const response = await fetch('https://api.recraft.ai/api/v1/imagine', {
+    const response = await fetch('https://api.recraft.ai/v2/generations', {  // Changed to v2 endpoint
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey.trim()}`  // Added Bearer prefix back
+        'x-api-key': process.env.RECRAFT_API_KEY  // Changed to x-api-key header
       },
       body: JSON.stringify({
-        prompt: `Create an accessible ${assetType}: ${prompt}`,
+        prompt: `Create an accessible ${assetType}: ${prompt}. Make it high contrast, simple, and clear.`,
+        negative_prompt: "blurry, low contrast, confusing, complex",
+        model: "sd-2.1",  // Added model parameter
         width: 512,
         height: 512,
-        num_images: 1,
-        style: 'icon',
-        negative_prompt: "blurry, low contrast, confusing, complex"
+        num_outputs: 1
       })
     })
 
-    // Log the response for debugging
     console.log('Response status:', response.status)
 
     if (!response.ok) {
@@ -40,8 +32,9 @@ export async function POST(req) {
     const responseData = await response.json()
     console.log('Recraft response:', responseData)
 
-    const assets = Array.isArray(responseData.output) ? responseData.output.map(url => ({
-      url,
+    // Adjust based on actual response structure
+    const assets = responseData.images ? responseData.images.map(image => ({
+      url: image.url,
       type: assetType,
       accessibilityScore: 0.95
     })) : []
