@@ -51,10 +51,11 @@ export default function AssetGenerator() {
     }
   }
 
- // In the generateAssets function in AssetGenerator.js, update it to:
 const generateAssets = async () => {
   setIsProcessing(true)
   try {
+    console.log('Sending request with:', { textPrompt, workflowType, selectedAssetType })
+    
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: {
@@ -69,20 +70,18 @@ const generateAssets = async () => {
       }),
     })
 
-    if (!response.ok) {
-      throw new Error('Generation failed')
-    }
-
+    console.log('Response status:', response.status)
     const data = await response.json()
-    if (data.error) {
-      throw new Error(data.error)
+    console.log('Response data:', data)
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Generation failed')
     }
 
     setGeneratedAssets(data.assets)
   } catch (error) {
     console.error('Generation failed:', error)
-    // You might want to add UI feedback here
-    alert('Failed to generate assets. Please try again.')
+    alert(error.message || 'Failed to generate assets. Please try again.')
   } finally {
     setIsProcessing(false)
   }
