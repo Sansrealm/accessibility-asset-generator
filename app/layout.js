@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   title: 'Accessibility Asset Generator',
-  description: 'Generate accessible assets using AI',
+  description: 'Generate accessible assets using AI'
 }
 
 export default function RootLayout({ children }) {
