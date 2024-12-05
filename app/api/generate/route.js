@@ -5,19 +5,19 @@ export async function POST(req) {
     const body = await req.json()
     const { prompt, workflowType, assetType } = body
 
-    const response = await fetch('https://api.recraft.ai/v2/generations', {  // Changed to v2 endpoint
+    const response = await fetch('https://api.recraft.ai/v1/imagine', {  // Updated to v1/imagine
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.RECRAFT_API_KEY  // Changed to x-api-key header
+        'x-api-key': process.env.RECRAFT_API_KEY
       },
       body: JSON.stringify({
         prompt: `Create an accessible ${assetType}: ${prompt}. Make it high contrast, simple, and clear.`,
         negative_prompt: "blurry, low contrast, confusing, complex",
-        model: "sd-2.1",  // Added model parameter
         width: 512,
         height: 512,
-        num_outputs: 1
+        num_outputs: 1,
+        model: "stable-diffusion"
       })
     })
 
@@ -32,9 +32,8 @@ export async function POST(req) {
     const responseData = await response.json()
     console.log('Recraft response:', responseData)
 
-    // Adjust based on actual response structure
-    const assets = responseData.images ? responseData.images.map(image => ({
-      url: image.url,
+    const assets = responseData.output ? responseData.output.map(url => ({
+      url,
       type: assetType,
       accessibilityScore: 0.95
     })) : []
