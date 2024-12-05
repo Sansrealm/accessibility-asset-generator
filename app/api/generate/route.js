@@ -5,50 +5,48 @@ export async function POST(req) {
     const body = await req.json()
     const { prompt, workflowType, assetType } = body
 
-    console.log('Starting generation with:', { prompt, workflowType, assetType })
-
-    if (!process.env.RECRAFT_API_KEY) {
-      throw new Error('RECRAFT_API_KEY is not configured')
+    // Validate API key
+    const apiKey = process.env.RECRAFT_API_KEY
+    if (!apiKey) {
+      throw new Error('Recraft API key is not configured')
     }
 
-    // Using the correct Recraft API endpoint
-    const response = await fetch('https://api.recraft.ai/api/v1/imagine', {  // Updated endpoint
+    // Call Recraft API with proper authorization
+    const response = await fetch('https://api.recraft.ai/api/v1/imagine', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.RECRAFT_API_KEY}`
+        'Authorization': apiKey // Remove 'Bearer ' prefix if it's already in the key
       },
       body: JSON.stringify({
-        prompt,
-        model: 'stable-diffusion', // Add model specification
-        input_image_weight: 0.75,
+        prompt: `Create an accessible ${assetType}: ${prompt}`,
         width: 512,
         height: 512,
         num_images: 1
       })
     })
 
+    console.log('Recraft API response status:', response.status)
+    
+    const responseData = await response.json()
+    console.log('Recraft API response:', responseData)
+
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Recraft API error:', errorText)
-      throw new Error(`Recraft API failed: ${errorText}`)
+      throw new Error(responseData.error || 'Recraft API request failed')
     }
 
-    const recraftResponse = await response.json()
-    console.log('Recraft response received:', recraftResponse)
-
-    // Adjust based on actual Recraft response structure
-    const assets = [{
-      url: recraftResponse.output[0], // Adjust based on actual response structure
+    // Assuming responseData.output is an array of image URLs
+    const assets = (responseData.output || []).map(url => ({
+      url,
       type: assetType,
       accessibilityScore: 0.95
-    }]
+    }))
 
     return NextResponse.json({ assets })
   } catch (error) {
     console.error('Generation error:', error)
     return NextResponse.json(
-      { error: error.message || 'Asset generation failed' },
+      { error: error.message },
       { status: 500 }
     )
   }
