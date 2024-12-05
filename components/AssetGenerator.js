@@ -51,31 +51,42 @@ export default function AssetGenerator() {
     }
   }
 
-  const generateAssets = async () => {
-    setIsProcessing(true)
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: textPrompt,
-          workflowType,
-          assetType: selectedAssetType,
-          domain: selectedDomain,
-          brandColors
-        }),
-      })
+ // In the generateAssets function in AssetGenerator.js, update it to:
+const generateAssets = async () => {
+  setIsProcessing(true)
+  try {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: textPrompt,
+        workflowType,
+        assetType: selectedAssetType,
+        domain: selectedDomain,
+        brandColors
+      }),
+    })
 
-      const data = await response.json()
-      setGeneratedAssets(data.assets)
-    } catch (error) {
-      console.error('Generation failed:', error)
-    } finally {
-      setIsProcessing(false)
+    if (!response.ok) {
+      throw new Error('Generation failed')
     }
+
+    const data = await response.json()
+    if (data.error) {
+      throw new Error(data.error)
+    }
+
+    setGeneratedAssets(data.assets)
+  } catch (error) {
+    console.error('Generation failed:', error)
+    // You might want to add UI feedback here
+    alert('Failed to generate assets. Please try again.')
+  } finally {
+    setIsProcessing(false)
   }
+}
 
   const renderWorkflowButton = (key, value) => (
     <div
