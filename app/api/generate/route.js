@@ -11,31 +11,37 @@ export async function POST(req) {
       throw new Error('Recraft API key is not configured')
     }
 
-    // Call Recraft API with proper authorization
+    // Call Recraft API with proper bearer token
     const response = await fetch('https://api.recraft.ai/api/v1/imagine', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': apiKey // Remove 'Bearer ' prefix if it's already in the key
+        'Authorization': `Bearer ${apiKey}`  // Added Bearer prefix properly
       },
       body: JSON.stringify({
         prompt: `Create an accessible ${assetType}: ${prompt}`,
         width: 512,
         height: 512,
-        num_images: 1
+        num_images: 1,
+        style: 'icon'  // Added style parameter for icons
       })
     })
 
-    console.log('Recraft API response status:', response.status)
-    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Recraft API error:', errorText)
+      try {
+        const errorJson = JSON.parse(errorText)
+        throw new Error(errorJson.error || 'Recraft API request failed')
+      } catch {
+        throw new Error(`Recraft API request failed: ${errorText}`)
+      }
+    }
+
     const responseData = await response.json()
     console.log('Recraft API response:', responseData)
 
-    if (!response.ok) {
-      throw new Error(responseData.error || 'Recraft API request failed')
-    }
-
-    // Assuming responseData.output is an array of image URLs
+    // Handle the response data
     const assets = (responseData.output || []).map(url => ({
       url,
       type: assetType,
