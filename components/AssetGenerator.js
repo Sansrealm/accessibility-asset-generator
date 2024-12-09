@@ -274,3 +274,4 @@ const generateAssets = async () => {
     </div>
   )
 }
+
